@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Job Listings Demo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        h1 { color: #2c3e50; }
+        .token-input { margin-bottom: 20px; }
+        .job-list { margin-top: 30px; }
+        .job-card { border: 1px solid #ccc; border-radius: 6px; padding: 16px; margin-bottom: 16px; }
+        .job-card h3 { margin: 0 0 8px 0; }
+        .job-card small { color: #888; }
+        .form-section { margin-top: 40px; padding: 20px; border: 1px solid #eee; border-radius: 6px; background: #fafbfc; }
+        label { display: block; margin-top: 10px; }
+        input, textarea, select { width: 100%; padding: 6px; margin-top: 4px; }
+        button { margin-top: 16px; padding: 8px 16px; background: #3498db; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #217dbb; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Job Listings Demo</h1>
+    <div class="token-input">
+        <label for="jwtToken">JWT Token:</label>
+        <input type="text" id="jwtToken" placeholder="Paste your JWT token here" style="width: 60%;">
+        <button onclick="saveToken()">Save Token</button>
+        <span id="tokenStatus"></span>
+    </div>
+    <button onclick="fetchJobs()">View All Job Listings</button>
+    <div class="job-list" id="jobList"></div>
+
+    <div class="form-section">
+        <h2>Create Job Listing</h2>
+        <form id="jobForm">
+            <label>Title: <input type="text" id="title" required></label>
+            <label>Description: <textarea id="description" required></textarea></label>
+            <label>Type:
+                <select id="type" required>
+                    <option value="Full Time">Full Time</option>
+                    <option value="Part Time">Part Time</option>
+                    <option value="Internship">Internship</option>
+                    <option value="Contract">Contract</option>
+                </select>
+            </label>
+            <label>Location: <input type="text" id="location" required></label>
+            <label>Remote:
+                <select id="remote" required>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                </select>
+            </label>
+            <label>Start Date: <input type="date" id="startDate" required></label>
+            <label>Duration (weeks): <input type="number" id="durationWeeks" required></label>
+            <label>Stipend: <input type="number" id="stipend" required></label>
+            <label>Posted At: <input type="datetime-local" id="postedAt" required></label>
+            <label>Expiry Date: <input type="datetime-local" id="expiryDate" required></label>
+            <label>Is Active:
+                <select id="isActive" required>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                </select>
+            </label>
+            <button type="submit">Create Job</button>
+            <span id="formStatus"></span>
+        </form>
+    </div>
+
+    <script>
+        // Save token to localStorage
+        function saveToken() {
+            const token = document.getElementById('jwtToken').value.trim();
+            if (token) {
+                localStorage.setItem('jwtToken', token);
+                document.getElementById('tokenStatus').textContent = 'Token saved!';
+                document.getElementById('tokenStatus').className = 'success';
+            } else {
+                document.getElementById('tokenStatus').textContent = 'Please enter a token.';
+                document.getElementById('tokenStatus').className = 'error';
+            }
+        }
+
+        // Fetch all job listings
+        async function fetchJobs() {
+            const token = localStorage.getItem('jwtToken');
+            const jobList = document.getElementById('jobList');
+            jobList.innerHTML = 'Loading...';
+            try {
+                const res = await fetch('/api/joblistings', {
+                    headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+                });
+                if (!res.ok) throw new Error('Failed to fetch jobs');
+                const jobs = await res.json();
+                if (jobs.length === 0) {
+                    jobList.innerHTML = '<p>No job listings found.</p>';
+                    return;
+                }
+                jobList.innerHTML = jobs.map(job => `
+                    <div class="job-card">
+                        <h3>${job.title}</h3>
+                        <small>Posted by: ${job.postedByName || 'N/A'} (ID: ${job.postedById || 'N/A'})</small><br>
+                        <b>Type:</b> ${job.type} | <b>Location:</b> ${job.location} | <b>Remote:</b> ${job.remote ? 'Yes' : 'No'}<br>
+                        <b>Stipend:</b> ${job.stipend} | <b>Duration:</b> ${job.durationWeeks} weeks<br>
+                        <b>Start:</b> ${job.startDate} | <b>Expiry:</b> ${job.expiryDate}<br>
+                        <p>${job.description}</p>
+                    </div>
+                `).join('');
+            } catch (err) {
+                jobList.innerHTML = '<span class="error">' + err.message + '</span>';
+            }
+        }
+
+        // Handle job creation
+        document.getElementById('jobForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const token = localStorage.getItem('jwtToken');
+            const formStatus = document.getElementById('formStatus');
+            formStatus.textContent = '';
+            const job = {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                type: document.getElementById('type').value,
+                location: document.getElementById('location').value,
+                remote: document.getElementById('remote').value === 'true',
+                startDate: document.getElementById('startDate').value,
+                durationWeeks: parseInt(document.getElementById('durationWeeks').value),
+                stipend: parseFloat(document.getElementById('stipend').value),
+                postedAt: document.getElementById('postedAt').value,
+                expiryDate: document.getElementById('expiryDate').value,
+                isActive: document.getElementById('isActive').value === 'true'
+            };
+            try {
+                const res = await fetch('/api/joblistings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+                    },
+                    body: JSON.stringify(job)
+                });
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw new Error(err);
+                }
+                formStatus.textContent = 'Job created!';
+                formStatus.className = 'success';
+                fetchJobs();
+                this.reset();
+            } catch (err) {
+                formStatus.textContent = err.message;
+                formStatus.className = 'error';
+            }
+        });
+    </script>
+</body>
+</html> 
