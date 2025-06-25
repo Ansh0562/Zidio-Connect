@@ -25,6 +25,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())  // CSRF fully disabled
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/notifications/send").permitAll()
                         .requestMatchers("/", "/index.html", "/dashboard.html", "/css/**", "/js/**").permitAll()
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/students/**").hasAuthority("STUDENT")
