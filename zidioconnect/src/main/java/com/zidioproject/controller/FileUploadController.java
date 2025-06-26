@@ -22,7 +22,7 @@ public class FileUploadController {
     @Autowired
     private FileUploadService fileUploadService;
 
-    @PostMapping("api/file")
+    @PostMapping("/upload")
     public ResponseEntity<Map<String,String>>upload(@RequestParam("file")MultipartFile file) throws IOException{
         String filepath = fileUploadService.upload(file);
         return ResponseEntity.ok(Map.of("ResumeUrl",filepath));
@@ -30,12 +30,16 @@ public class FileUploadController {
     }
 
     @GetMapping("/{fileName}")
-    public ResponseEntity<Resource> downlaod(@PathVariable String filename) throws IOException{
-        Path path = Paths.get("upload/resumes").resolve(filename);
-        Resource resource =new UrlResource(path.toUri());
-
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(resource);
+    public ResponseEntity<Resource> download(@PathVariable String fileName) throws IOException{
+        Path path = Paths.get("uploads").resolve(fileName);
+        Resource resource = new UrlResource(path.toUri());
+        
+        if (resource.exists() && resource.isReadable()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

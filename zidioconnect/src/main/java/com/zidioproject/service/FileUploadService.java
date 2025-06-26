@@ -32,10 +32,9 @@ public class FileUploadService {
         Path targetpath = path.resolve(filename);
 
         //copy file to target path
-
         Files.copy(file.getInputStream(),targetpath, StandardCopyOption.REPLACE_EXISTING);
 
         // return  file path or URL
-        return "/files/"+filename;
+        return "/api/file/"+filename;
     }
 }

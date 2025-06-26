@@ -26,6 +26,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/notifications/send").permitAll()
+                        .requestMatchers("/api/file/**").permitAll()  // Allow file upload/download
                         .requestMatchers("/", "/index.html", "/dashboard.html", "/css/**", "/js/**").permitAll()
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/students/**").hasAuthority("STUDENT")
